@@ -84,6 +84,7 @@ def login():
     cursor.close()
     conn.close()
 
+
     if student:
         return jsonify(student)
     else:
