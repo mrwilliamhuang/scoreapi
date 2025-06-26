@@ -1,8 +1,7 @@
-cd /home/william/repo/api && git statuscd /home/william/repo/api && git statusfrom flask import Flask, jsonify, request
+from flask import Flask, jsonify, request
 import mysql.connector
 from mysql.connector import Error
 import os
-
 
 
 app = Flask(__name__)
