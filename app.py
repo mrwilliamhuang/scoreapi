@@ -9,7 +9,7 @@ app = Flask(__name__)
 # 数据库配置
 DB_HOST = os.getenv('DB_HOST', 'localhost')
 DB_USER = os.getenv('DB_USER', 'root')
-DB_PASSWORD = os.getenv('DB_PASSWORD', 'password')
+DB_PASSWORD = os.getenv('DB_PASSWORD', 'Newuser1')
 DB_NAME = os.getenv('DB_NAME', 'student_db')
 
 # 创建数据库连接
@@ -78,7 +78,17 @@ def login():
     if not conn:
         return jsonify({'error': 'Database connection error'}), 500
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM students WHERE student_id = %s AND password = %s", (student_id, password))
+    # 修改登录查询
+    cursor.execute("""
+        SELECT student_id, name FROM students 
+        WHERE student_id = %s AND password = %s
+    """, (student_id, password))
+    
+    # 修改成绩查询
+    cursor.execute("""
+        SELECT subject, type, score FROM scores 
+        WHERE student_id = %s
+    """, (student_id,))
     student = cursor.fetchone()
     cursor.close()
     conn.close()
