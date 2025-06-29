@@ -1,10 +1,11 @@
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 import mysql.connector
 from mysql.connector import Error
 import os
 
-
 app = Flask(__name__)
+CORS(app)  # 允许所有来源
 
 # 数据库配置
 DB_HOST = os.getenv('DB_HOST', 'localhost')
@@ -70,28 +71,55 @@ def get_scores(student_id):
 # 登录接口
 @app.route('/login', methods=['POST'])
 def login():
-    data = request.get_json()
-    student_id = data.get('username')
-    password = data.get('password')
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+            
+        student_id = data.get('username')
+        password = data.get('password')
 
-    conn = create_connection()
-    if not conn:
-        return jsonify({'error': 'Database connection error'}), 500
-    cursor = conn.cursor(dictionary=True)
-    # 修改登录查询
-    cursor.execute("""
-        SELECT student_id, name FROM students 
-        WHERE student_id = %s AND password = %s
-    """, (student_id, password))
-    
-    # 修改成绩查询
-    cursor.execute("""
-        SELECT subject, type, score FROM scores 
-        WHERE student_id = %s
-    """, (student_id,))
-    student = cursor.fetchone()
-    cursor.close()
-    conn.close()
+        if not student_id or not password:
+            return jsonify({'error': 'Username and password required'}), 400
+
+        conn = create_connection()
+        if not conn:
+            return jsonify({'error': 'Database connection error'}), 500
+            
+        cursor = conn.cursor(dictionary=True)
+        
+        # 添加错误处理
+        try:
+            cursor.execute("""
+                SELECT student_id, name FROM students 
+                WHERE student_id = %s AND password = %s
+            """, (student_id, password))
+            
+            student = cursor.fetchone()
+            
+            if not student:
+                return jsonify({'error': 'Invalid credentials'}), 401
+                
+            cursor.execute("""
+                SELECT subject, type, score FROM scores 
+                WHERE student_id = %s
+            """, (student_id,))
+            
+            scores = cursor.fetchall()
+            student['scores'] = scores
+            
+        except Exception as e:
+            app.logger.error(f"Database error: {str(e)}")
+            return jsonify({'error': 'Database operation failed'}), 500
+        finally:
+            cursor.close()
+            conn.close()
+            
+        return jsonify(student)
+        
+    except Exception as e:
+        app.logger.error(f"Unexpected error: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 
     if student:
