@@ -1,4 +1,4 @@
 # 忽略环境目录
 env/
 # 忽略迁移目录
-migrations/
+migrations/__pycache__/
